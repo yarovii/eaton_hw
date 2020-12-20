@@ -1,0 +1,28 @@
+//
+// Created by Глеб Яровой on 12/19/20.
+//
+
+#ifndef EATON_HW_DEVICE_H
+#define EATON_HW_DEVICE_H
+
+struct DeviceMessage
+{
+    uint32_t                         m_ID;
+    std::initializer_list<uint64_t>  m_Fragments;
+};
+
+class DeviceMock {
+
+public:
+    uint32_t    CalculateCRC32  (   const uint8_t * data,
+                                    size_t  bits );
+
+    uint32_t    CreateMeasurements  (    const uint8_t * data,
+                                            size_t  bits );
+
+    bool    MakeFragment ( const uint8_t * data, size_t  bits );
+    bool    MakeMessage  ( const uint8_t * data, size_t  bits );
+};
+
+
+#endif //EATON_HW_DEVICE_H
