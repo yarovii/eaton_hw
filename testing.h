@@ -5,28 +5,36 @@
 #ifndef EATON_HW_TESTING_H
 #define EATON_HW_TESTING_H
 
+#include <cstdint>
+#include <memory>
+#include <deque>
 
-class testing {
+uint32_t    CalculateCRC32  (   const uint8_t * data, size_t  bits );
 
+class DeviceReceiver {
+    std::deque<uint64_t>     m_Data;
+public:
+    DeviceReceiver                                 ( std::initializer_list<uint64_t> data );
+    bool             Recv                          ( uint64_t        & fragment );
 };
 
 struct DeviceMessage
 {
     uint32_t                         m_ID;
-    std::initializer_list<uint64_t>  m_Fragments;
+    uint32_t                         m_CRC32;
+    std::deque<uint64_t>             m_Data;
 };
 
 class DeviceMock {
+    DeviceMessage * tail_device;
 
 public:
-    uint32_t    CalculateCRC32  (   const uint8_t * data,
-                                    size_t  bits );
-
-    uint32_t    CreateMeasurements  (    const uint8_t * data,
+    uint32_t    CreateMeasurement  (    const uint8_t * data,
                                          size_t  bits );
 
-    bool    MakeFragment ( const uint8_t * data, size_t  bits );
-    bool    MakeMessage  ( const uint8_t * data, size_t  bits );
+    bool    MakeMessage  ( size_t amount, size_t  bugs, size_t fragments );
+
+    bool    MakeFragments ( const uint8_t * data, size_t  bits );
 };
 
 

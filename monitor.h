@@ -1,7 +1,7 @@
 //
 // Created by Глеб Яровой on 12/19/20.
 //
-
+#include "testing.h"
 #ifndef EATON_HW_MONITOR_H
 #define EATON_HW_MONITOR_H
 
@@ -23,7 +23,7 @@ public:
      * actually starts (method Start).
      * @param[in] rec        receiver to set
      */
-    void                     AddDeviceReceiver             ( Device          rec );
+    void                     AddDeviceReceiver             ( DeviceReceiver          rec );
     //---------------------------------------------------------------------------------------------
     /**
      * the method is called asynchronously from thread(s) in the testing environment.
