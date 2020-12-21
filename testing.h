@@ -18,6 +18,7 @@ public:
     bool             Recv                          ( uint64_t        & fragment );
 };
 
+/*
 struct DeviceMessage
 {
     uint32_t                         m_ID;
@@ -36,6 +37,7 @@ public:
 
     bool    MakeFragments ( const uint8_t * data, size_t  bits );
 };
+*/
 
 
 

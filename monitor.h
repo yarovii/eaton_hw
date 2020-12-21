@@ -3,13 +3,25 @@
 //
 #include "testing.h"
 #include <deque>
+#include <vector>
+#include <optional>
 #ifndef EATON_HW_MONITOR_H
 #define EATON_HW_MONITOR_H
 
-
+struct DeviceMessage
+{
+    uint32_t                         m_ID;
+    std::vector<uint32_t>            m_Data;
+    std::optional<DeviceMessage*>    m_Next;
+};
 
 class MonitorDevices {
     std::mutex mx_receiver;
+    std::mutex mx_fragment;
+    std::mutex mx_device_message;
+    std::atomic<uint32_t> count_all_message;
+
+    std::optional<DeviceMessage*> tail;
     //---------------------------------------------------------------------------------------------
     /**
      * the variable stores all DeviceReceiver to get data synchronously.
@@ -28,11 +40,21 @@ class MonitorDevices {
     //---------------------------------------------------------------------------------------------
     /**
      * the method receives fragments from device receiver and stores message fragments.
-     * Can throw exception if receives no data.
      * @param[in] index        index in deque(one thread will work with one receiver from std::deque<DeviceReceiver> receiver)
      */
     void                     ReceiveFragments              ( uint8_t index );
+    //---------------------------------------------------------------------------------------------
+    /**
+     *
+     */
+    void                     decomposeFragment                ( uint64_t fragment, uint32_t &id,  uint32_t &data, uint16_t &lrc );
+
+
+    void                     storeMessage                ( uint32_t &id  );
+
+    std::optional<DeviceMessage*> findDevice                  ( uint32_t &id );
 public:
+                             MonitorDevices                   ( void );
     //---------------------------------------------------------------------------------------------
     /**
      * the method registers a new receiver(just one). The method itself does not do anything else (in particular,
@@ -63,6 +85,11 @@ public:
      * Method MonitorDevices::CheckMessage is called only after all fragments read( if fragments counter == 0)
      */
     void                     CheckMessage                  ( void );
+    //---------------------------------------------------------------------------------------------
+    /**
+     *
+     */
+    void                     ProcessMessage                  ( void );
     //---------------------------------------------------------------------------------------------
     /**
      * the method starts all required threads and starts to process the incoming message fragments. It does

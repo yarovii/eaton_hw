@@ -4,11 +4,11 @@
 
 #include "testing.h"
 
-DeviceMessage *    DeviceMock::MakeMessage  ( size_t amount, size_t  bugs, size_t fragments ){
+/*DeviceMessage *    DeviceMock::MakeMessage  ( size_t amount, size_t  bugs, size_t fragments ){
 
 
     return NULL;
-}
+}*/
 
 DeviceReceiver::DeviceReceiver      ( std::initializer_list<uint64_t> data )
         : m_Data ( data )

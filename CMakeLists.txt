@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.14)
 project(eaton_hw)
 
-set(CMAKE_CXX_STANDARD 14)
+set(CMAKE_CXX_STANDARD 17)
 
 file(GLOB source_files
         "*.h"
