@@ -16,7 +16,9 @@
 #define LRC_SIZE 8
 
 MonitorDevices::MonitorDevices(){
-    tail = NULL;
+    count_invalid_message=0;
+    count_invalid_message=0;
+//    tail.;
 }
 
 void                     MonitorDevices::AddDeviceReceiver             ( DeviceReceiver          rec ){
@@ -41,43 +43,59 @@ void                     MonitorDevices::ReceiveFragments              ( uint8_t
         mx_receiver.lock();
         fragment.emplace_back(frag);
         mx_receiver.unlock();
-        count_all_message++;
     }
 }
 
 void                     MonitorDevices::ProcessMessage                  ( void ){
+    char *bitset = new char[64];
     uint32_t id = 0;
     uint32_t data = 0;
     uint16_t lrc = 0;
-
-    mx_fragment.lock();
-    uint64_t frag = fragment.front();
-    fragment.pop_front();
-    mx_fragment.unlock();
+    while(true) {
+        id = 0;
+        data = 0;
+        lrc = 0;
+        mx_fragment.lock();
+        if(fragment.size() == 0) {
+            mx_fragment.unlock();
+            break;
+        }
+        uint64_t frag = fragment.front();
+        fragment.pop_front();
+        mx_fragment.unlock();
 
 //    frag = 0xffffffffffffffff;
-    decomposeFragment(frag, id, data, lrc);
+        toBinary(bitset, frag);
+        decomposeFragment(bitset, id, data, lrc);
 
-    checkMessage();
+        if ( !checkLRC(lrc, bitset)) {
+            printf("#Damaged data, device id: %i\n", id);
+            count_invalid_message++;
+            continue;
+        }
 
-    mx_device_message.lock();
-    auto str = findDevice(id);
-    mx_device_message.unlock();
+        count_valid_message++;
 
-    if(str.has_value()) {
-        mx_device_message.lock();
-        str.value()->m_Data.push_back(data);
-        mx_device_message.unlock();
+        /* mx_device_message.lock();
+         auto str = findDevice(id);
+         mx_device_message.unlock();
+
+         if(str.has_value()) {
+             mx_device_message.lock();
+             str.value()->m_Data.push_back(data);
+             mx_device_message.unlock();
+         }
+         else{
+     //        createStructAndStore();
+         }*/
+
+        std::cout << "frag: " << frag << "  data: " << data << "  id: " << id << "  lrc: " << lrc << "\n";
+        break;
     }
-    else{
-        createStructAndStore();
-    }
-
-    std::cout << "frag: " << frag << "  data: " << data << "   id: "<< id << "   lrc: " << lrc << "\n";
-
+    delete[]bitset;
 }
 
-std::optional<DeviceMessage*> MonitorDevices::findDevice( uint32_t &id ) {
+/*std::optional<DeviceMessage*> MonitorDevices::findDevice( uint32_t &id ) {
     auto tmp = tail;
 
     while(tmp.has_value()){
@@ -86,11 +104,25 @@ std::optional<DeviceMessage*> MonitorDevices::findDevice( uint32_t &id ) {
         tmp = tmp.value()->m_Next;
     }
     return {};
+}*/
+
+bool                     MonitorDevices::checkLRC                       ( uint16_t & lrc, char *& bitset ){
+    uint16_t result_lrc=0;
+    uint16_t tmp=0;
+//    std::cout << "\n" << (MESSAGE_SIZE-LRC_SIZE)/8 << "  jdjdd\n";/
+    for(size_t i=LRC_SIZE; i < LRC_SIZE+8; i++){
+        tmp=0;
+        for(size_t j=0; j < LRC_SIZE+((MESSAGE_SIZE-LRC_SIZE)/8); j++) {
+            tmp += (bitset[i+(8*j)] == '1') ? 1 : 0;
+        }
+        result_lrc = result_lrc << 1;
+        result_lrc += (tmp % 2 == 0) ? 0 : 1;
+    }
+
+    return lrc == result_lrc;
 }
 
-void                     MonitorDevices::decomposeFragment              (uint64_t fragment, uint32_t &id, uint32_t &data, uint16_t &lrc ){
-    char bitset[64];
-    uint64_t number = fragment;
+void                     MonitorDevices::toBinary                       ( char *& bitset, uint64_t number){
 
     for(size_t i=0; i<MESSAGE_SIZE; ++i)
     {
@@ -101,6 +133,9 @@ void                     MonitorDevices::decomposeFragment              (uint64_
 
         number >>= 1;
     }
+}
+
+void                     MonitorDevices::decomposeFragment              ( char *& bitset, uint32_t &id, uint32_t &data, uint16_t &lrc ){
 
     for(size_t i=0; i < MESSAGE_SIZE; i++){
         if(i > MESSAGE_SIZE-ID_SIZE-1){
@@ -118,7 +153,7 @@ void                     MonitorDevices::decomposeFragment              (uint64_
     }
 }
 
-void                     MonitorDevices::Start                         ( uint8_t         thrCount ){
+void                     MonitorDevices::Start                          ( uint8_t         thrCount ){
     std::thread *th;
 
     for(size_t i=0; i < receiver.size(); i++) {
@@ -134,6 +169,14 @@ void                     MonitorDevices::Start                         ( uint8_t
 
 }
 
+uint32_t                     MonitorDevices::getValidMessageNum               ( void ){
+    return count_valid_message;
+}
+
+uint32_t                     MonitorDevices::getInvalidMessageNum               ( void ){
+    return count_invalid_message;
+}
+
 void                     MonitorDevices::Stop                          ( void ){
 
 }
@@ -146,15 +189,13 @@ int main(){
 
     DeviceReceiver deviceReceiver = DeviceReceiver(std::initializer_list<uint64_t> { 0x02230000000c, 0x071e124dabef, 0x02360037680e, 0x071d2f8fe0a1, 0x055500150755 } );
 
-//    deviceReceiver.
     monitor.AddDeviceReceiver(deviceReceiver);
     monitor.AddSomeDeviceReceivers(std::initializer_list<DeviceReceiver> {DeviceReceiver(std::initializer_list<uint64_t> { 0x02230000000c, 0x071e124dabef } ),
                                                                           DeviceReceiver(std::initializer_list<uint64_t> { 0x02360037680e, 0x071d2f8fe0a1, 0x055500150755 } )});
-
-
     monitor.Start(2);
 
-
+    std::cout << "valid: " << monitor.getValidMessageNum() << "  invalid: "
+              << monitor.getInvalidMessageNum() << "  all: " << monitor.getInvalidMessageNum() + monitor.getValidMessageNum() << std::endl;
 
     return 0;
 }

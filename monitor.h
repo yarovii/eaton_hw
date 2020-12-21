@@ -19,7 +19,8 @@ class MonitorDevices {
     std::mutex mx_receiver;
     std::mutex mx_fragment;
     std::mutex mx_device_message;
-    std::atomic<uint32_t> count_all_message;
+    std::atomic<uint32_t> count_valid_message;
+    std::atomic<uint32_t> count_invalid_message;
 
     std::optional<DeviceMessage*> tail;
     //---------------------------------------------------------------------------------------------
@@ -31,12 +32,11 @@ class MonitorDevices {
     std::deque<uint64_t> fragment;
     //---------------------------------------------------------------------------------------------
     /**
-     * the method check if message is valid. Method CheckCRC32 get crc32 from fragments by calling
-     * method DeviceMock::CalculateCRC32. Then checks equality of our crc32 with received one
-     * @param[in] m_CRC32        received CRC32 from message
+     * the method check if message is valid. Method CheckLRC get lrc from message. Then checks equality of our lrc with received one
+     * @param[in] m_CRC32        received lrc from message
      * @param[in] data           received fragments
      */
-    bool                     CheckCRC32                    (   uint32_t & m_CRC32, const uint8_t * data );
+    bool                     checkLRC                     (   uint16_t & lrc, char *& bitset );
     //---------------------------------------------------------------------------------------------
     /**
      * the method receives fragments from device receiver and stores message fragments.
@@ -47,14 +47,17 @@ class MonitorDevices {
     /**
      *
      */
-    void                     decomposeFragment                ( uint64_t fragment, uint32_t &id,  uint32_t &data, uint16_t &lrc );
+    void                     decomposeFragment                ( char *& bitset, uint32_t &id,  uint32_t &data, uint16_t &lrc );
 
 
-    void                     storeMessage                ( uint32_t &id  );
+    void                     storeMessage                     ( uint32_t &id  );
+    void                     toBinary                         ( char *& bitset, uint64_t fragment);
 
     std::optional<DeviceMessage*> findDevice                  ( uint32_t &id );
 public:
                              MonitorDevices                   ( void );
+    uint32_t                     getValidMessageNum               ( void );
+    uint32_t                     getInvalidMessageNum             ( void );
     //---------------------------------------------------------------------------------------------
     /**
      * the method registers a new receiver(just one). The method itself does not do anything else (in particular,
