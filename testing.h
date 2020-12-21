@@ -32,7 +32,7 @@ public:
     uint32_t    CreateMeasurement  (    const uint8_t * data,
                                          size_t  bits );
 
-    bool    MakeMessage  ( size_t amount, size_t  bugs, size_t fragments );
+    DeviceMessage * MakeMessage  ( size_t amount, size_t  bugs, size_t fragments );
 
     bool    MakeFragments ( const uint8_t * data, size_t  bits );
 };

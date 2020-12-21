@@ -2,11 +2,21 @@
 // Created by Глеб Яровой on 12/19/20.
 //
 #include "testing.h"
+#include <deque>
 #ifndef EATON_HW_MONITOR_H
 #define EATON_HW_MONITOR_H
 
 
+
 class MonitorDevices {
+    std::mutex mx_receiver;
+    //---------------------------------------------------------------------------------------------
+    /**
+     * the variable stores all DeviceReceiver to get data synchronously.
+     */
+    std::deque<DeviceReceiver> receiver;
+
+    std::deque<uint64_t> fragment;
     //---------------------------------------------------------------------------------------------
     /**
      * the method check if message is valid. Method CheckCRC32 get crc32 from fragments by calling
@@ -15,15 +25,30 @@ class MonitorDevices {
      * @param[in] data           received fragments
      */
     bool                     CheckCRC32                    (   uint32_t & m_CRC32, const uint8_t * data );
+    //---------------------------------------------------------------------------------------------
+    /**
+     * the method receives fragments from device receiver and stores message fragments.
+     * Can throw exception if receives no data.
+     * @param[in] index        index in deque(one thread will work with one receiver from std::deque<DeviceReceiver> receiver)
+     */
+    void                     ReceiveFragments              ( uint8_t index );
 public:
     //---------------------------------------------------------------------------------------------
     /**
-     * the method registers a new receiver. The method itself does not do anything else (in particular,
+     * the method registers a new receiver(just one). The method itself does not do anything else (in particular,
      * it does not start any thread). The receiver thread will be created after the computation
      * actually starts (method Start).
      * @param[in] rec        receiver to set
      */
     void                     AddDeviceReceiver             ( DeviceReceiver          rec );
+    //---------------------------------------------------------------------------------------------
+    /**
+     * the method registers a new list of receivers. The method itself does not do anything else (in particular,
+     * it does not start any thread). The receiver thread will be created after the computation
+     * actually starts (method Start).
+     * @param[in] list        all receivers to set
+     */
+    void                     AddSomeDeviceReceivers             ( std::initializer_list<DeviceReceiver>           list );
     //---------------------------------------------------------------------------------------------
     /**
      * the method is called asynchronously from thread(s) in the testing environment.
@@ -32,12 +57,6 @@ public:
      * @param[in] fragment        fragment of message
      */
     void                     AddFragment                   ( uint64_t          fragment );
-    //---------------------------------------------------------------------------------------------
-    /**
-     * the method receives fragments from device receiver and stores message fragments.
-     * Can throw exception if receives no data.
-     */
-    void                     ReceiveFragments              ( void );
     //---------------------------------------------------------------------------------------------
     /**
      * the method check if message fragments read correctly. Otherwise, throw exception and delete device data.
@@ -50,7 +69,7 @@ public:
      * not wait for the completion of the threads.
      * @param[in] thrCount        number of worker threads
      */
-    void                     Start                         ( unsigned          thrCount );
+    void                     Start                         ( uint8_t          thrCount );
     //---------------------------------------------------------------------------------------------
     /**
      * the method is called from the main thread to stop the computation. the method waits until all fragments
