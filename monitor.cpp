@@ -8,6 +8,8 @@
 #include <memory>
 #include <atomic>
 #include <optional>
+#include <chrono>
+#include <sstream>
 #include "monitor.h"
 
 #define ID_SIZE 24
@@ -16,8 +18,9 @@
 #define LRC_SIZE 8
 
 MonitorDevices::MonitorDevices(){
+    count_valid_message=0;
     count_invalid_message=0;
-    count_invalid_message=0;
+    stop = false;
 //    tail.;
 }
 
@@ -46,12 +49,35 @@ void                     MonitorDevices::ReceiveFragments              ( uint8_t
     }
 }
 
+void                     MonitorDevices::AddFragment                   ( uint64_t          frag ) {
+    if(!stop){
+        mx_receiver.lock();
+        fragment.emplace_back(frag);
+        mx_receiver.unlock();
+        cv_worker.notify_one();
+    }
+}
+
 void                     MonitorDevices::ProcessMessage                  ( void ){
     char *bitset = new char[64];
     uint32_t id = 0;
     uint32_t data = 0;
     uint16_t lrc = 0;
+//    std::thread::id this_id = std::this_thread::get_id();
+
     while(true) {
+        std::unique_lock<std::mutex> locker(mx_worker);
+        cv_worker.wait(locker, [this](){
+            return !fragment.empty() || stop; });
+//        std::cout << "WWWWWWWWWWW    " << this_id << std::endl;
+
+        locker.unlock();
+        if(stop && fragment.empty()) {
+            cv_worker.notify_all();
+            return;
+        }
+
+//        std::this_thread::sleep_for ( std::chrono::milliseconds ( 100 ) );
         id = 0;
         data = 0;
         lrc = 0;
@@ -64,7 +90,6 @@ void                     MonitorDevices::ProcessMessage                  ( void 
         fragment.pop_front();
         mx_fragment.unlock();
 
-//    frag = 0xffffffffffffffff;
         toBinary(bitset, frag);
         decomposeFragment(bitset, id, data, lrc);
 
@@ -88,8 +113,11 @@ void                     MonitorDevices::ProcessMessage                  ( void 
          else{
      //        createStructAndStore();
          }*/
+        std::stringstream stream;
+        stream << std::hex << frag;
+        std::string frag_to_hex( stream.str() );
 
-        std::cout << "frag: " << frag << "  data: " << data << "  id: " << id << "  lrc: " << lrc << "\n";
+        std::cout << "frag: " << frag_to_hex << "  data: " << data << "  id: " << id << "  lrc: " << lrc << "\n";
         break;
     }
     delete[]bitset;
@@ -161,9 +189,11 @@ void                     MonitorDevices::Start                          ( uint8_
         th->join();
     }
 
+    w_threads.reserve(thrCount);
     for(size_t i=0; i < thrCount; i++){
-        th =new std::thread(&MonitorDevices::ProcessMessage,this);
-        th->join();
+        w_threads.emplace_back(new std::thread(&MonitorDevices::ProcessMessage,this));
+//        th =new std::thread(&MonitorDevices::ProcessMessage,this);
+//        th->join();
 
     }
 
@@ -178,7 +208,11 @@ uint32_t                     MonitorDevices::getInvalidMessageNum               
 }
 
 void                     MonitorDevices::Stop                          ( void ){
-
+    std::this_thread::sleep_for ( std::chrono::milliseconds ( 4000 ) );
+    stop = true;
+    cv_worker.notify_all();
+    for(auto th : w_threads)
+        th->join();
 }
 
 
@@ -190,10 +224,11 @@ int main(){
     DeviceReceiver deviceReceiver = DeviceReceiver(std::initializer_list<uint64_t> { 0x02230000000c, 0x071e124dabef, 0x02360037680e, 0x071d2f8fe0a1, 0x055500150755 } );
 
     monitor.AddDeviceReceiver(deviceReceiver);
-    monitor.AddSomeDeviceReceivers(std::initializer_list<DeviceReceiver> {DeviceReceiver(std::initializer_list<uint64_t> { 0x02230000000c, 0x071e124dabef } ),
+    monitor.AddSomeDeviceReceivers(std::initializer_list<DeviceReceiver> {DeviceReceiver(std::initializer_list<uint64_t> { 0x02230000000c, 0x071e124dabef, 0xffffffffffffffff } ),
                                                                           DeviceReceiver(std::initializer_list<uint64_t> { 0x02360037680e, 0x071d2f8fe0a1, 0x055500150755 } )});
     monitor.Start(2);
 
+    monitor.Stop();
     std::cout << "valid: " << monitor.getValidMessageNum() << "  invalid: "
               << monitor.getInvalidMessageNum() << "  all: " << monitor.getInvalidMessageNum() + monitor.getValidMessageNum() << std::endl;
 

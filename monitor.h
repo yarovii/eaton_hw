@@ -5,24 +5,29 @@
 #include <deque>
 #include <vector>
 #include <optional>
+#include <condition_variable>
 #ifndef EATON_HW_MONITOR_H
 #define EATON_HW_MONITOR_H
 
-struct DeviceMessage
+/*struct DeviceMessage
 {
     uint32_t                         m_ID;
     std::vector<uint32_t>            m_Data;
     std::optional<DeviceMessage*>    m_Next;
-};
+};*/
 
 class MonitorDevices {
+    std::condition_variable cv_worker;
     std::mutex mx_receiver;
     std::mutex mx_fragment;
+    std::mutex mx_worker;
     std::mutex mx_device_message;
     std::atomic<uint32_t> count_valid_message;
     std::atomic<uint32_t> count_invalid_message;
 
-    std::optional<DeviceMessage*> tail;
+    std::vector<std::thread *> w_threads;
+    bool stop;
+//    std::optional<DeviceMessage*> tail;
     //---------------------------------------------------------------------------------------------
     /**
      * the variable stores all DeviceReceiver to get data synchronously.
@@ -50,10 +55,10 @@ class MonitorDevices {
     void                     decomposeFragment                ( char *& bitset, uint32_t &id,  uint32_t &data, uint16_t &lrc );
 
 
-    void                     storeMessage                     ( uint32_t &id  );
+//    void                     storeMessage                     ( uint32_t &id  );
     void                     toBinary                         ( char *& bitset, uint64_t fragment);
 
-    std::optional<DeviceMessage*> findDevice                  ( uint32_t &id );
+//    std::optional<DeviceMessage*> findDevice                  ( uint32_t &id );
 public:
                              MonitorDevices                   ( void );
     uint32_t                     getValidMessageNum               ( void );
@@ -81,13 +86,13 @@ public:
      * only between the invocations of MonitorDevices::Start and MonitorDevices::Stop.
      * @param[in] fragment        fragment of message
      */
-    void                     AddFragment                   ( uint64_t          fragment );
+    void                     AddFragment                   ( uint64_t          frag );
     //---------------------------------------------------------------------------------------------
     /**
      * the method check if message fragments read correctly. Otherwise, throw exception and delete device data.
      * Method MonitorDevices::CheckMessage is called only after all fragments read( if fragments counter == 0)
      */
-    void                     CheckMessage                  ( void );
+//    void                     CheckMessage                  ( void );
     //---------------------------------------------------------------------------------------------
     /**
      *
