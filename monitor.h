@@ -21,7 +21,7 @@ class MonitorDevices {
     std::mutex mx_receiver;
     std::mutex mx_fragment;
     std::mutex mx_worker;
-    std::mutex mx_device_message;
+    std::mutex mx_console_message;
     std::atomic<uint32_t> count_valid_message;
     std::atomic<uint32_t> count_invalid_message;
 

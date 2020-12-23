@@ -10,6 +10,7 @@
 #include <optional>
 #include <chrono>
 #include <sstream>
+#include <functional>
 #include "monitor.h"
 
 #define ID_SIZE 24
@@ -69,6 +70,7 @@ void                     MonitorDevices::ProcessMessage                  ( void 
         std::unique_lock<std::mutex> locker(mx_worker);
         cv_worker.wait(locker, [this](){
             return !fragment.empty() || stop; });
+
 //        std::cout << "WWWWWWWWWWW    " << this_id << std::endl;
 
         locker.unlock();
@@ -94,7 +96,9 @@ void                     MonitorDevices::ProcessMessage                  ( void 
         decomposeFragment(bitset, id, data, lrc);
 
         if ( !checkLRC(lrc, bitset)) {
+            mx_console_message.lock();
             printf("#Damaged data, device id: %i\n", id);
+            mx_console_message.unlock();
             count_invalid_message++;
             continue;
         }
@@ -116,8 +120,9 @@ void                     MonitorDevices::ProcessMessage                  ( void 
         std::stringstream stream;
         stream << std::hex << frag;
         std::string frag_to_hex( stream.str() );
-
+        mx_console_message.lock();
         std::cout << "frag: " << frag_to_hex << "  data: " << data << "  id: " << id << "  lrc: " << lrc << "\n";
+        mx_console_message.unlock();
         break;
     }
     delete[]bitset;
@@ -140,7 +145,7 @@ bool                     MonitorDevices::checkLRC                       ( uint16
 //    std::cout << "\n" << (MESSAGE_SIZE-LRC_SIZE)/8 << "  jdjdd\n";/
     for(size_t i=LRC_SIZE; i < LRC_SIZE+8; i++){
         tmp=0;
-        for(size_t j=0; j < LRC_SIZE+((MESSAGE_SIZE-LRC_SIZE)/8); j++) {
+        for(size_t j=0; j < 8; j++) {
             tmp += (bitset[i+(8*j)] == '1') ? 1 : 0;
         }
         result_lrc = result_lrc << 1;
@@ -199,16 +204,16 @@ void                     MonitorDevices::Start                          ( uint8_
 
 }
 
-uint32_t                     MonitorDevices::getValidMessageNum               ( void ){
+uint32_t                 MonitorDevices::getValidMessageNum               ( void ){
     return count_valid_message;
 }
 
-uint32_t                     MonitorDevices::getInvalidMessageNum               ( void ){
+uint32_t                 MonitorDevices::getInvalidMessageNum               ( void ){
     return count_invalid_message;
 }
 
 void                     MonitorDevices::Stop                          ( void ){
-    std::this_thread::sleep_for ( std::chrono::milliseconds ( 4000 ) );
+//    std::this_thread::sleep_for ( std::chrono::milliseconds ( 4000 ) );
     stop = true;
     cv_worker.notify_all();
     for(auto th : w_threads)
@@ -220,6 +225,7 @@ int main(){
     std::cout << "NNNNN\n";
 
     MonitorDevices monitor;
+    DeviceMock device;
 
     DeviceReceiver deviceReceiver = DeviceReceiver(std::initializer_list<uint64_t> { 0x02230000000c, 0x071e124dabef, 0x02360037680e, 0x071d2f8fe0a1, 0x055500150755 } );
 
@@ -227,7 +233,9 @@ int main(){
     monitor.AddSomeDeviceReceivers(std::initializer_list<DeviceReceiver> {DeviceReceiver(std::initializer_list<uint64_t> { 0x02230000000c, 0x071e124dabef, 0xffffffffffffffff } ),
                                                                           DeviceReceiver(std::initializer_list<uint64_t> { 0x02360037680e, 0x071d2f8fe0a1, 0x055500150755 } )});
     monitor.Start(2);
-
+    std::this_thread::sleep_for ( std::chrono::milliseconds ( 4000 ) );
+    device.MessageSender(std::bind ( &MonitorDevices::AddFragment, &monitor,std::placeholders::_1 ), 10, 2);
+    std::this_thread::sleep_for ( std::chrono::milliseconds ( 4000 ) );
     monitor.Stop();
     std::cout << "valid: " << monitor.getValidMessageNum() << "  invalid: "
               << monitor.getInvalidMessageNum() << "  all: " << monitor.getInvalidMessageNum() + monitor.getValidMessageNum() << std::endl;
