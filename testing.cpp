@@ -15,17 +15,17 @@ DeviceReceiver::DeviceReceiver      ( std::initializer_list<uint64_t> data )
 {
 }
 //-------------------------------------------------------------------------------------------------
-bool               DeviceReceiver::Recv                  ( uint64_t        & fragment )
+bool               DeviceReceiver::Recv                               ( uint64_t        & message )
 {
     if ( ! d_Data . size () )
         return false;
 //  this_thread::sleep_for ( std::chrono::milliseconds ( rand () % 100 ) );
-    fragment = d_Data . front ();
+    message = d_Data . front ();
     d_Data . pop_front ();
     return true;
 }
 
-bool    DeviceMock::makeMessage ( uint32_t num_valid, uint32_t num_bug ){
+bool               DeviceMock::makeMessage                            ( uint32_t num_valid, uint32_t num_bug ){
     uint64_t all_message = num_bug+num_valid;
     m_Data.reserve(all_message);
 
