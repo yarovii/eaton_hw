@@ -166,7 +166,7 @@ void                     MonitorDevices::toBinary                       ( char *
     }
 }
 
-void                     MonitorDevices::decomposeMessage( char *&bitset, uint32_t &id, uint32_t &data, uint16_t &lrc ){
+void                     MonitorDevices::decomposeMessage               ( char *&bitset, uint32_t &id, uint32_t &data, uint16_t &lrc ){
 
     for(size_t i=0; i < MESSAGE_SIZE; i++){
         if(i > MESSAGE_SIZE-ID_SIZE-1){
