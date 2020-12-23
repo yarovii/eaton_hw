@@ -38,7 +38,7 @@ bool    DeviceMock::makeMessage ( uint32_t num_valid, uint32_t num_bug ){
         for(size_t i=8; i < 64; i++)
             bitset[i] = (rand()%2 == 1) ? '1' : '0';
 
-        uint16_t m_result = 0;
+        uint64_t m_result = 0;
         uint16_t tmp = 0;
 
         ///create LRC for random bitset and store in temporary m_result variable
@@ -47,11 +47,12 @@ bool    DeviceMock::makeMessage ( uint32_t num_valid, uint32_t num_bug ){
             for ( size_t j = 0; j < 8; j++ ) {
                 tmp += ( bitset[i + ( 8 * j )] == '1' ) ? 1 : 0;
             }
+//            bitset[l] = ( tmp % 2 == 0 ) ? '0' : '1';
             m_result = m_result << 1;
-            m_result += ( tmp % 2 == 0 ) ? '0' : '1';
+            m_result += ( tmp % 2 == 0 ) ? 0 : 1;
         }
 
-        ///create bugs
+        /*///create bugs
         if(num_bug > 0){
             size_t random_var = rand() % 64;
             for(size_t i = random_var; i < random_var+5; i++){
@@ -61,16 +62,23 @@ bool    DeviceMock::makeMessage ( uint32_t num_valid, uint32_t num_bug ){
                     bitset[i] = (bitset[i] == '1') ? '0' : '1';
             }
             num_bug--;
-        }
+        }*/
 
         /// make full message
         for ( size_t i = 8; i < 64; i++ ) {
             m_result = m_result << 1;
             m_result += ( bitset[i] == '1' ) ? 1 : 0;
         }
+        /*std::cout << "\nheheheh\n";
+        for ( size_t i = 0; i < 64; i++ ) {
+            if(i % 8 == 0) std::cout << std::endl;
+            std::cout << bitset[i];
+        }
+
+        std::cout << std::endl;*/
 
         ///store message
-        m_Data.emplace_back(m_result);
+        m_Data.push_back(m_result);
     }
 }
 
@@ -78,9 +86,10 @@ bool    DeviceMock::makeMessage ( uint32_t num_valid, uint32_t num_bug ){
 void               DeviceMock::MessageSender                          ( std::function<void(uint64_t)> target, uint64_t num_valid, uint64_t num_bug)
 {
     makeMessage(num_valid, num_bug);
-
+    std::cout << m_Data.size() << "   SZEEE\n";
     for ( auto x : m_Data )
     {
+        std::cout << x << " \n";
         target ( x );
 //    this_thread::sleep_for ( std::chrono::milliseconds ( rand () % 100 ) );
     }
