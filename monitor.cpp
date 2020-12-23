@@ -233,7 +233,7 @@ int main(){
                                                                           DeviceReceiver(std::initializer_list<uint64_t> { 0x02360037680e, 0x071d2f8fe0a1, 0x055500150755 } )});
     monitor.Start(2);
 //    std::this_thread::sleep_for ( std::chrono::milliseconds ( 4000 ) );
-    device.MessageSender(std::bind ( &MonitorDevices::AddFragment, &monitor,std::placeholders::_1 ), 10, 0);
+    device.MessageSender(std::bind ( &MonitorDevices::AddFragment, &monitor,std::placeholders::_1 ), 10, 2);
     std::this_thread::sleep_for ( std::chrono::milliseconds ( 8000 ) );
     monitor.Stop();
     std::cout << "valid: " << monitor.getValidMessageNum() << "  invalid: "

@@ -92,11 +92,6 @@ public:
      * the method check if message fragments read correctly. Otherwise, throw exception and delete device data.
      * Method MonitorDevices::CheckMessage is called only after all fragments read( if fragments counter == 0)
      */
-//    void                     CheckMessage                  ( void );
-    //---------------------------------------------------------------------------------------------
-    /**
-     *
-     */
     void                     ProcessMessage                  ( void );
     //---------------------------------------------------------------------------------------------
     /**

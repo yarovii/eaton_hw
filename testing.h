@@ -22,7 +22,7 @@ public:
 
 class DeviceMock {
 
-    char bitset[64];
+    char bitset[56];
 
     bool createLRC(void);
 
