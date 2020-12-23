@@ -220,21 +220,38 @@ void                     MonitorDevices::Stop                           ( void )
 
 
 int main(){
-    std::cout << "NNNNN\n";
 
+    /// Create monitor instance
     MonitorDevices monitor;
+
+    /// Create device instance
     DeviceMock device;
 
+    /// Create one receiver with some messages(5)
     DeviceReceiver deviceReceiver = DeviceReceiver(std::initializer_list<uint64_t> { 0x02230000000c, 0x071e124dabef, 0x02360037680e, 0x071d2f8fe0a1, 0x055500150755 } );
 
+    /// Add receiver to monitor system
     monitor.AddDeviceReceiver(deviceReceiver);
+
+    /// Add two receivers with some messages
     monitor.AddSomeDeviceReceivers(std::initializer_list<DeviceReceiver> {DeviceReceiver(std::initializer_list<uint64_t> { 0x02230000000c, 0x071e124dabef, 0xffffffffffffffff } ),
                                                                           DeviceReceiver(std::initializer_list<uint64_t> { 0x02360037680e, 0x071d2f8fe0a1, 0x055500150755 } )});
+
+    /// Start monitor system with 2 worker threads ( they validate message )
     monitor.Start(2);
+
 //    std::this_thread::sleep_for ( std::chrono::milliseconds ( 4000 ) );
+
+    //// Asynchronous adding of messages.  100 - will create 100 valid messages
+    ////                                    200 - will create invalid messages
     device.MessageSender(std::bind ( &MonitorDevices::AddFragment, &monitor,std::placeholders::_1 ), 100, 200);
+
     std::this_thread::sleep_for ( std::chrono::milliseconds ( 1500 ) );
+
+    //// Stop receiving asynchronous messages and Stop workers after messages done
     monitor.Stop();
+
+    //// Show statistic of messages
     std::cout << "valid: " << monitor.getValidMessageNum() << "  invalid: "
               << monitor.getInvalidMessageNum() << "  all: " << monitor.getInvalidMessageNum() + monitor.getValidMessageNum() << std::endl;
 
