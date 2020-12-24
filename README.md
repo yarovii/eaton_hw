@@ -24,3 +24,5 @@ You can modify number of messages in file monitor.cpp in main function by changi
 To start program you need to type in console:
     - make
     - ./test
+    
+    
