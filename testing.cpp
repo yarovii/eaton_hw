@@ -25,7 +25,7 @@ bool               DeviceReceiver::Recv                               ( uint64_t
     return true;
 }
 
-bool               DeviceMock::makeMessage                            ( uint32_t num_valid, uint32_t num_bug ){
+void               DeviceMock::makeMessage                            ( uint32_t num_valid, uint32_t num_bug ){
     uint64_t all_message = num_bug+num_valid;
     m_Data.reserve(all_message);
 

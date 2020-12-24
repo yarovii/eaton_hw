@@ -18,3 +18,9 @@ If message is INVALID then you can find "#Damaged data, device id: " line in con
 //-------------------------------------------------------------------------------------------------
 
 You can modify number of messages in file monitor.cpp in main function by changing parameters in DeviceMock::MessageSender.
+
+//-------------------------------------------------------------------------------------------------
+
+To start program you need to type in console:
+    - make
+    - ./test

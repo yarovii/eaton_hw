@@ -50,7 +50,7 @@ class DeviceMock {
      * @param[in] num_valid        number of valid messages to produce
      * @param[in] num_bug          number of invalid messages to produce
      */
-    bool                makeMessage                            ( uint32_t num_valid, uint32_t num_bug );
+    void                makeMessage                            ( uint32_t num_valid, uint32_t num_bug );
 public:
     //---------------------------------------------------------------------------------------------
     /**
