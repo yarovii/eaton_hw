@@ -25,4 +25,4 @@ To start program you need to type in console:
     - make
     - ./test
     
-    
+.
